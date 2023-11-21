@@ -1,8 +1,24 @@
-#!/usr/bin/env python3
-""" Simple pagination """
 import csv
-import math
-from typing import List, Tuple
+from typing import List
+from typing import Tuple
+
+
+def index_range(page: int, page_size: int) -> Tuple[int, int]:
+    """
+    Range of the page
+
+    Args:
+        page: Current page
+        page_size: Total size of the page
+
+    Return:
+        tuple with the range start and end size page
+    """
+
+    final_size: int = page * page_size
+    start_size: int = final_size - page_size
+
+    return (start_size, final_size)
 
 
 class Server:
@@ -20,41 +36,43 @@ class Server:
             with open(self.DATA_FILE) as f:
                 reader = csv.reader(f)
                 dataset = [row for row in reader]
-            self.__dataset = dataset[1:]
+            self.__dataset = dataset[1:]  # excluding header row
 
         return self.__dataset
 
     def get_page(self, page: int = 1, page_size: int = 10) -> List[List]:
-        """
-            Get the page
+        assert isinstance(page, int) and page > 0, "Page should be a positive integer"
+        assert isinstance(page_size, int) and page_size > 0, "Page size should be a positive integer"
 
-            Args:
-                page: Current page
-                page_size: Total size of the page
+        dataset = self.dataset()
+        total_rows = len(dataset)
 
-            Return:
-                List of the pagination done
-        """
-        assert isinstance(page, int) and page > 0
-        assert isinstance(page_size, int) and page_size > 0
+        start, end = index_range(page, page_size)
 
-        range: Tuple = index_range(page, page_size)
-        pagination: List = self.dataset()
-
-        return (pagination[range[0]:range[1]])
+        if start >= total_rows:
+            return []  # Return empty list if the start index exceeds dataset size
+        else:
+            return dataset[start:end]
 
 
-def index_range(page: int, page_size: int) -> Tuple[int, int]:
-    """
-    Range of the page
-    Args:
-        page: Current page
-        page_size: Total size of the page
-    Return:
-        tuple with the range start and end size page
-    """
+# Test cases
+server = Server()
 
-    final_size: int = page * page_size
-    start_size: int = final_size - page_size
+try:
+    should_err = server.get_page(-10, 2)
+except AssertionError:
+    print("AssertionError raised with negative values")
 
-    return (start_size, final_size)
+try:
+    should_err = server.get_page(0, 0)
+except AssertionError:
+    print("AssertionError raised with 0")
+
+try:
+    should_err = server.get_page(2, 'Bob')
+except AssertionError:
+    print("AssertionError raised when page and/or page_size are not ints")
+
+print(server.get_page(1, 3))
+print(server.get_page(3, 2))
+print(server.get_page(3000, 100))
